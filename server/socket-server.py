@@ -2,6 +2,8 @@ import io
 import os
 import socket
 import struct
+import cv2
+import numpy as np
 from PIL import Image
 
 server_socket = socket.socket()
@@ -24,6 +26,8 @@ try:
         image = Image.open(image_stream)
 
         print('Image is %dx%d' % image.size)
+        cv2.imshow('Pi', cv2.cvtColor(np.array(image), cv2.COLOR_BGR2RGB))
+        cv2.waitKey(1)
 
 finally:
     connection.close()
