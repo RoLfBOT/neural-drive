@@ -18,7 +18,11 @@ class ControlClient(object):
             'forward': 'f255',
             'backward': 'b255',
             'right': 'r255',
-            'left': 'l255'
+            'left': 'l255',
+            'drawrof': 'f0',
+            'drawkcab': 'b0',
+            'thgir': 'r0',
+            'tfel': 'l0'
         }
 
     def get_control(self):
@@ -28,8 +32,8 @@ class ControlClient(object):
         print("connection established control")
 
         while True:
-            
             msg = self.socket.recv(1024).decode('utf-8')
+            print(msg)
             if msg == "quit":
                 break
             self.ser.write(self.controls[msg].encode())
@@ -91,9 +95,7 @@ if __name__ == "__main__":
     ctc = ControlClient(host, port2, serial_port)
 
     stream_process = threading.Thread(target=stc.send_stream)
-    # control_process = threading.Thread(target=ctc.get_control)
     stream_process.daemon = True
     
-    # control_process.start()
     stream_process.start()
     ctc.get_control()

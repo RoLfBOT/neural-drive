@@ -41,6 +41,9 @@ class ControlStreamHandler(socketserver.BaseRequestHandler):
             'q': "quit"
         }
 
+        self.last_command = None
+        self.command_sent = False
+
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN:
@@ -49,27 +52,41 @@ class ControlStreamHandler(socketserver.BaseRequestHandler):
                     if key_input[pygame.K_UP]:
                         print("sending control")
                         self.request.sendall(self.controls['f'].encode('utf-8'))
-                        print("sent control {}".format(self.controls.['f']))
+                        self.last_command = self.controls['f']
+                        self.command_sent = True
+                        print("sent control {}".format(self.controls['f']))
 
                     if key_input[pygame.K_DOWN]:
                         print("sending control")
                         self.request.sendall(self.controls['b'].encode('utf-8'))
-                        print("sent control {}".format(self.controls.['b']))
+                        self.last_command = self.controls['b']
+                        self.command_sent = True
+                        print("sent control {}".format(self.controls['b']))
 
                     if key_input[pygame.K_LEFT]:
                         print("sending control")
                         self.request.sendall(self.controls['l'].encode('utf-8'))
-                        print("sent control {}".format(self.controls.['l']))
+                        self.last_command = self.controls['l']
+                        self.command_sent = True
+                        print("sent control {}".format(self.controls['l']))
 
                     if key_input[pygame.K_RIGHT]:
                         print("sending control")
                         self.request.sendall(self.controls['r'].encode('utf-8'))
-                        print("sent control {}".format(self.controls.['r']))
+                        self.last_command = self.controls['r']
+                        self.command_sent = True
+                        print("sent control {}".format(self.controls['r']))
 
                     if key_input[pygame.K_q]:
                         self.request.sendall(self.controls['q'].encode('utf-8'))
                         pygame.display.quit()
                         break
+                
+                elif event.type == pygame.KEYUP:
+                    if self.command_sent:
+                        self.command_sent = False
+                        self.request.sendall(self.last_command[::-1].encode('utf-8'))
+
 
 class Server(object):
     def __init__(self, host, port1, port2):
@@ -92,10 +109,8 @@ class Server(object):
 
     def start(self):
         stream_process = threading.Thread(target=self.video_stream, args=(self.host, self.port1))
-        # control_process = threading.Thread(target=self.control_stream, args=(self.host, self.port2))
         stream_process.daemon = True
         stream_process.start()
-        # control_process.start()
         self.control_stream(self.host, self.port2)
 
 if __name__ == "__main__":

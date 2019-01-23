@@ -2,24 +2,14 @@
 AF_DCMotor motor1(1, MOTOR12_64KHZ);
 AF_DCMotor motor2(2, MOTOR12_64KHZ);
 
-//Function Declaration
-
-void Left();
-void Right();
-void Forward(); 
-void Backward();
-
-
 void setup() {
   Serial.begin(9600);
 }
 
 
-
 void loop() 
 {
     Readdata(); 
-
 }
 
 void Readdata()
@@ -27,110 +17,39 @@ void Readdata()
   if(Serial.available()>0)
   {
     char buff=Serial.read();
+    int val=Serial.parseInt();
     switch (buff)
     {
       case 'l':
       {
-        Left();
+        turnMotor(motor2,false,val);
+        break;
       }
       case 'r':
       {
-        Right();
+        turnMotor(motor2,true,val);
+        break;
       }
       case 'f':
       {
-        Forward();
+        turnMotor(motor1,false,val);
+        break;
       }
       case 'b':
       {
-        Backward();
+        turnMotor(motor1,true,val);
+        break;
       }
     }
     
   }
 }
 
-void Left()
-{
-   
-   
-    int val=Serial.parseInt();
-    motor2.setSpeed(val);
-    motor2.run(FORWARD);  //left
-    Serial.println("check Left");
-    delay(1000);
-    Stop2();
-    Serial.println("check motor2 Stopped");
-    
-   
-}
-
-   void Right()
-{
-   
-   
-    int val=Serial.parseInt();
-    motor2.setSpeed(val);
-    motor2.run(BACKWARD);  //right
-    
-    Serial.println("check right");  
-    delay(1000);
-    Stop2();
-    Serial.println("check motor2 Stopped");
-      
-}
-
-void Forward()
-{
-   
-   
-    int val=Serial.parseInt();
-    motor1.setSpeed(val);
-    motor1.run(FORWARD);  // forward
-     Serial.println("check Forrward");    
- delay(1000);
-  Stop1();
-  Serial.println(" check motor2 Stopped");
-   
-}
-
-void Backward()
-{
-   
-   
-    int val=Serial.parseInt();
-    motor1.setSpeed(val);
-    motor1.run(BACKWARD);  //backward
-     Serial.println("check Backward");    
-    delay(1000);
-    Stop1();
-  Serial.println("check motor1 Stopped");
-}
-
-void Stop1()
-{
-  motor1.run(RELEASE);
-  Serial.println("motor1 Stopped");
-  while(1)
-    {
-      if(Serial.available()>0)
-      {
-        Readdata();    
-      }
-    }
-   
-}
-
-void Stop2()
-{
-  motor2.run(RELEASE);
-  Serial.println("motor2 Stopped");
-  while(1)
-    {
-      if(Serial.available()>0)
-      {
-        Readdata();    
-      }
-    }
-   
+void turnMotor(AF_DCMotor motor,bool backward,int val){
+  motor.setSpeed(val);
+  if(backward){
+    motor.run(BACKWARD);
+  }else{
+    motor.run(FORWARD);
+  }
 }
