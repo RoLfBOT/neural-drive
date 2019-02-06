@@ -1,3 +1,4 @@
+import os
 import sys
 import cv2
 import threading
@@ -5,9 +6,15 @@ import numpy as np
 import socketserver
 import pygame
 import socket
+import time
+
+current_frame = None
+X = np.empty((0, 120, 320))
+y = np.empty((0, 1))
 
 class VideoStreamHandler(socketserver.StreamRequestHandler):
     def handle(self):
+        global current_frame
         stream = b' '
 
         try:
@@ -21,8 +28,10 @@ class VideoStreamHandler(socketserver.StreamRequestHandler):
                     stream = stream[last+2:]
 
                     gray = cv2.imdecode(np.frombuffer(jpg, dtype = np.uint8), cv2.IMREAD_GRAYSCALE)
+                    current_frame = np.expand_dims(gray, axis=0)
 
                     cv2.imshow('image', gray)
+                    print(gray.shape)
 
                     if cv2.waitKey(1) & 0xFF == ord('q'):
                         break
@@ -33,6 +42,9 @@ class VideoStreamHandler(socketserver.StreamRequestHandler):
 
 class ControlStreamHandler(socketserver.BaseRequestHandler):
     def handle(self):
+        global X
+        global y
+
         self.controls = {
             'f': "forward",
             'b': "backward",
@@ -54,6 +66,8 @@ class ControlStreamHandler(socketserver.BaseRequestHandler):
                         self.request.sendall(self.controls['f'].encode('utf-8'))
                         self.last_command = self.controls['f']
                         self.command_sent = True
+                        X = np.vstack((X, current_frame))
+                        y = np.vstack((y, 1))
                         print("sent control {}".format(self.controls['f']))
 
                     if key_input[pygame.K_DOWN]:
@@ -61,6 +75,8 @@ class ControlStreamHandler(socketserver.BaseRequestHandler):
                         self.request.sendall(self.controls['b'].encode('utf-8'))
                         self.last_command = self.controls['b']
                         self.command_sent = True
+                        X = np.vstack((X, current_frame))
+                        y = np.vstack((y, 2))
                         print("sent control {}".format(self.controls['b']))
 
                     if key_input[pygame.K_LEFT]:
@@ -68,6 +84,8 @@ class ControlStreamHandler(socketserver.BaseRequestHandler):
                         self.request.sendall(self.controls['l'].encode('utf-8'))
                         self.last_command = self.controls['l']
                         self.command_sent = True
+                        X = np.vstack((X, current_frame))
+                        y = np.vstack((y, 3))
                         print("sent control {}".format(self.controls['l']))
 
                     if key_input[pygame.K_RIGHT]:
@@ -75,10 +93,20 @@ class ControlStreamHandler(socketserver.BaseRequestHandler):
                         self.request.sendall(self.controls['r'].encode('utf-8'))
                         self.last_command = self.controls['r']
                         self.command_sent = True
+                        X = np.vstack((X, current_frame))
+                        y = np.vstack((y, 4))
                         print("sent control {}".format(self.controls['r']))
 
                     if key_input[pygame.K_q]:
                         self.request.sendall(self.controls['q'].encode('utf-8'))
+                        if not os.path.exists('training_data'):
+                            os.makedirs('training_data')
+
+                        try:
+                            np.savez('training_data' + '/' + str(int(time.time())) + '.npz', train=X, train_labels=y)
+                        except IOError as e:
+                            print(e)
+
                         pygame.display.quit()
                         break
                 
@@ -108,9 +136,9 @@ class Server(object):
         s.serve_forever()
 
     def start(self):
-        stream_process = threading.Thread(target=self.video_stream, args=(self.host, self.port1))
-        stream_process.daemon = True
-        stream_process.start()
+        stream_thread = threading.Thread(target=self.video_stream, args=(self.host, self.port1))
+        stream_thread.daemon = True
+        stream_thread.start()
         self.control_stream(self.host, self.port2)
 
 if __name__ == "__main__":
